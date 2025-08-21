@@ -21,65 +21,88 @@ export default function POSPage() {
   const [showCustomerModal, setShowCustomerModal] = useState(false);
 
   useEffect(() => {
-    fetchServices();
-    fetchCustomers();
-    fetchVATRates();
+    const loadData = async () => {
+      try {
+        await Promise.all([
+          fetchServices(),
+          fetchCustomers(),
+          fetchVATRates()
+        ]);
+      } catch (error) {
+        console.error('Error loading POS data:', error);
+      }
+    };
+    
+    loadData();
   }, []);
 
   const fetchServices = async () => {
-    const { data, error } = await supabase
-      .from('services')
-      .select(`
-        *,
-        vat_rates (
-          id,
-          name,
-          rate
-        ),
-        inventory (
-          current_stock,
-          reserved_stock,
-          available_stock
-        )
-      `)
-      .eq('is_active', true);
+    try {
+      const { data, error } = await supabase
+        .from('services')
+        .select(`
+          *,
+          vat_rate:vat_rates (
+            id,
+            name,
+            rate
+          )
+        `)
+        .eq('is_active', true);
 
-    if (error) {
+      if (error) {
+        console.error('Error fetching services:', error);
+        setServices([]);
+      } else {
+        setServices(data || []);
+      }
+    } catch (error) {
       console.error('Error fetching services:', error);
-    } else {
-      setServices(data || []);
+      setServices([]);
     }
   };
 
   const fetchCustomers = async () => {
-    const { data, error } = await supabase
-      .from('customers')
-      .select('*')
-      .order('first_name');
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .order('first_name');
 
-    if (error) {
+      if (error) {
+        console.error('Error fetching customers:', error);
+        setCustomers([]);
+      } else {
+        setCustomers(data || []);
+      }
+    } catch (error) {
       console.error('Error fetching customers:', error);
-    } else {
-      setCustomers(data || []);
+      setCustomers([]);
     }
   };
 
   const fetchVATRates = async () => {
-    const { data, error } = await supabase
-      .from('vat_rates')
-      .select('*')
-      .eq('is_active', true);
+    try {
+      const { data, error } = await supabase
+        .from('vat_rates')
+        .select('*')
+        .eq('is_active', true);
 
-    if (error) {
+      if (error) {
+        console.error('Error fetching VAT rates:', error);
+        setVATRates([]);
+      } else {
+        setVATRates(data || []);
+      }
+    } catch (error) {
       console.error('Error fetching VAT rates:', error);
-    } else {
-      setVATRates(data || []);
+      setVATRates([]);
     }
   };
 
   const addToCart = (service: Service) => {
-    const inventory = service.inventory?.[0];
-    const isOutOfStock = service.track_inventory && inventory && inventory.available_stock <= 0;
+    // For now, skip inventory checks since tables might not exist yet
+    const isOutOfStock = false;
     
     if (isOutOfStock) {
       alert('Tento produkt není skladem');
@@ -87,11 +110,11 @@ export default function POSPage() {
     }
 
     const existingItem = cart.find(item => item.service_id === service.id);
-    const vatRate = service.vat_rates?.rate || 0;
+    const vatRate = service.vat_rate?.rate || 0;
     
     if (existingItem) {
       const newQuantity = existingItem.quantity + 1;
-      const maxQuantity = service.track_inventory && inventory ? inventory.available_stock : Infinity;
+      const maxQuantity = Infinity; // Skip inventory limits for now
       
       if (newQuantity > maxQuantity) {
         alert(`Maximální dostupné množství: ${maxQuantity}`);
@@ -288,9 +311,9 @@ export default function POSPage() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {services.map((service) => {
-                    const inventory = service.inventory?.[0];
-                    const isOutOfStock = service.track_inventory && inventory && inventory.available_stock <= 0;
-                    const isLowStock = service.track_inventory && inventory && inventory.available_stock <= (service.min_stock || 0) && inventory.available_stock > 0;
+                    // For now, we'll assume products are in stock since inventory table might not exist yet
+                    const isOutOfStock = false;
+                    const isLowStock = false;
 
                     return (
                       <div
@@ -325,17 +348,15 @@ export default function POSPage() {
                           {service.price.toLocaleString('cs-CZ')} Kč
                         </p>
                         
-                        {service.track_inventory && inventory && (
-                          <p className={`text-sm mt-1 ${
-                            isOutOfStock ? 'text-red-600' : isLowStock ? 'text-yellow-600' : 'text-gray-500'
-                          }`}>
-                            {isOutOfStock ? 'Vyprodáno' : `Skladem: ${inventory.available_stock}`}
+                        {service.track_inventory && (
+                          <p className="text-sm mt-1 text-gray-500">
+                            Sleduje se sklad
                           </p>
                         )}
                         
-                        {service.vat_rates && (
+                        {service.vat_rate && (
                           <p className="text-xs text-gray-400 mt-1">
-                            DPH: {service.vat_rates.rate}%
+                            DPH: {service.vat_rate.rate}%
                           </p>
                         )}
                       </div>

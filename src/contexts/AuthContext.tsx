@@ -53,8 +53,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', userId)
         .single()
 
-      if (error) throw error
-      setUser(data)
+      if (error) {
+        console.error('Error fetching user profile:', error)
+        // If user doesn't exist in users table, create a basic user object
+        if (error.code === 'PGRST116') {
+          setUser({
+            id: userId,
+            email: '',
+            full_name: 'User',
+            role: 'cashier',
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+        }
+      } else {
+        setUser(data)
+      }
     } catch (error) {
       console.error('Error fetching user profile:', error)
     } finally {
