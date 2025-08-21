@@ -16,6 +16,9 @@ export async function createTestUser() {
 
     if (error) {
       console.error('Error creating test user:', error)
+      if (error.message?.includes('Email signups are disabled')) {
+        return { success: false, error: 'Registrace nových uživatelů je zakázána. Zapněte "Allow new users to sign up" v Supabase Dashboard → Authentication → Settings.' }
+      }
       return { success: false, error: error.message }
     }
 
@@ -42,6 +45,9 @@ export async function createManagerUser() {
 
     if (error) {
       console.error('Error creating manager user:', error)
+      if (error.message?.includes('Email signups are disabled')) {
+        return { success: false, error: 'Registrace nových uživatelů je zakázána. Zapněte "Allow new users to sign up" v Supabase Dashboard → Authentication → Settings.' }
+      }
       return { success: false, error: error.message }
     }
 
@@ -68,6 +74,9 @@ export async function createCashierUser() {
 
     if (error) {
       console.error('Error creating cashier user:', error)
+      if (error.message?.includes('Email signups are disabled')) {
+        return { success: false, error: 'Registrace nových uživatelů je zakázána. Zapněte "Allow new users to sign up" v Supabase Dashboard → Authentication → Settings.' }
+      }
       return { success: false, error: error.message }
     }
 

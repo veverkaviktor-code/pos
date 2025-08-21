@@ -149,12 +149,19 @@ export default function LoginPage() {
 
           <div className="mt-4 text-sm text-gray-600 bg-yellow-50 border border-yellow-200 p-3 rounded-md">
             <p className="font-medium mb-2 text-yellow-800">⚠️ Důležité nastavení Supabase:</p>
-            <p className="text-yellow-700 mb-2">
-              <strong>Pokud dostáváte chybu "Invalid login credentials":</strong><br/>
-              1. Jděte do Supabase Dashboard → Authentication → Settings<br/>
-              2. Vypněte "Confirm email" (toggle na OFF)<br/>
-              3. Zkuste se přihlásit znovu
-            </p>
+            <div className="text-yellow-700 mb-2 space-y-2">
+              <div>
+                <strong>Pro vytvoření testovacích uživatelů:</strong><br/>
+                1. Jděte do Supabase Dashboard → Authentication → Settings<br/>
+                2. Zapněte "Allow new users to sign up" (toggle na ON)<br/>
+                3. Vypněte "Confirm email" (toggle na OFF)<br/>
+                4. Klikněte na "Vytvořit testovací uživatele"
+              </div>
+              <div>
+                <strong>Pokud dostáváte chybu "Invalid login credentials":</strong><br/>
+                Ujistěte se, že je "Confirm email" vypnuté (viz bod 3 výše)
+              </div>
+            </div>
             <p className="font-medium mb-2">Testovací přihlašovací údaje:</p>
             <div className="space-y-1">
               <p><strong>Admin:</strong> admin@thaimassage.cz / admin123</p>
