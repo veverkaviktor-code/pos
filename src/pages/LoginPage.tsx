@@ -159,7 +159,7 @@ export default function LoginPage() {
               </div>
               <div>
                 <strong>Pokud dostáváte chybu "Invalid login credentials":</strong><br/>
-                Ujistěte se, že je "Confirm email" vypnuté (viz bod 3 výše)
+                Ujistěte se, že je "Confirm email\" vypnuté (viz bod 3 výše)
               </div>
             </div>
             <p className="font-medium mb-2">Testovací přihlašovací údaje:</p>
