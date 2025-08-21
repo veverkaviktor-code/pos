@@ -1,14 +1,34 @@
 import React, { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import toast from 'react-hot-toast'
-import { Scissors } from 'lucide-react'
+import { Scissors, UserPlus } from 'lucide-react'
+import { createTestUser, createManagerUser, createCashierUser } from '../lib/auth'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [creatingUsers, setCreatingUsers] = useState(false)
   const { signIn } = useAuth()
 
+  const handleCreateTestUsers = async () => {
+    setCreatingUsers(true)
+    try {
+      const adminResult = await createTestUser()
+      const managerResult = await createManagerUser()
+      const cashierResult = await createCashierUser()
+
+      if (adminResult.success && managerResult.success && cashierResult.success) {
+        toast.success('Testovací uživatelé byli vytvořeni!')
+      } else {
+        toast.error('Někteří uživatelé již existují nebo došlo k chybě')
+      }
+    } catch (error) {
+      toast.error('Chyba při vytváření uživatelů')
+    } finally {
+      setCreatingUsers(false)
+    }
+  }
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -73,6 +93,26 @@ export default function LoginPage() {
             </div>
           </div>
 
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={handleCreateTestUsers}
+              disabled={creatingUsers}
+              className="group relative w-full flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              {creatingUsers ? 'Vytváření uživatelů...' : 'Vytvořit testovací uživatele'}
+            </button>
+          </div>
+
+          <div className="mt-4 text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
+            <p className="font-medium mb-2">Testovací přihlašovací údaje:</p>
+            <div className="space-y-1">
+              <p><strong>Admin:</strong> admin@thaimassage.cz / admin123</p>
+              <p><strong>Manažer:</strong> manager@thaimassage.cz / manager123</p>
+              <p><strong>Pokladní:</strong> pokladni@thaimassage.cz / pokladni123</p>
+            </div>
+          </div>
           <div>
             <button
               type="submit"
