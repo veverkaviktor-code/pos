@@ -47,16 +47,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      setLoading(true)
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .single()
 
-      if (error) throw error
-      setUser(data)
+      if (error) {
+        console.error('Error fetching user profile:', error)
+        // If we can't fetch profile, create a minimal user object from auth
+        const { data: authData } = await supabase.auth.getUser()
+        if (authData.user) {
+          const minimalUser = {
+            id: authData.user.id,
+            email: authData.user.email || '',
+            full_name: authData.user.user_metadata?.full_name || 'Uživatel',
+            role: authData.user.user_metadata?.role || 'cashier',
+            created_at: authData.user.created_at,
+            updated_at: authData.user.updated_at || authData.user.created_at
+          }
+          setUser(minimalUser as User)
+        }
+      } else {
+        setUser(data)
+      }
     } catch (error) {
       console.error('Error fetching user profile:', error)
+      // Fallback to auth metadata if profile fetch fails completely
+      const { data: authData } = await supabase.auth.getUser()
+      if (authData.user) {
+        const fallbackUser = {
+          id: authData.user.id,
+          email: authData.user.email || '',
+          full_name: authData.user.user_metadata?.full_name || 'Uživatel',
+          role: authData.user.user_metadata?.role || 'cashier',
+          created_at: authData.user.created_at,
+          updated_at: authData.user.updated_at || authData.user.created_at
+        }
+        setUser(fallbackUser as User)
+      }
     } finally {
       setLoading(false)
     }
