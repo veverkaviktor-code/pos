@@ -7,12 +7,10 @@ export async function createTestUser() {
       email: 'admin@thaimassage.cz',
       password: 'admin123',
       options: {
-        emailRedirectTo: undefined,
         data: {
           full_name: 'Admin Uživatel',
           role: 'admin'
-        },
-        captchaToken: undefined
+        }
       }
     })
 
@@ -21,6 +19,7 @@ export async function createTestUser() {
       return { success: false, error: error.message }
     }
 
+    console.log('Admin user created:', data)
     return { success: true, data }
   } catch (error) {
     console.error('Error:', error)
@@ -34,12 +33,10 @@ export async function createManagerUser() {
       email: 'manager@thaimassage.cz',
       password: 'manager123',
       options: {
-        emailRedirectTo: undefined,
         data: {
           full_name: 'Manažer Salonu',
           role: 'manager'
-        },
-        captchaToken: undefined
+        }
       }
     })
 
@@ -48,6 +45,7 @@ export async function createManagerUser() {
       return { success: false, error: error.message }
     }
 
+    console.log('Manager user created:', data)
     return { success: true, data }
   } catch (error) {
     console.error('Error:', error)
@@ -61,12 +59,10 @@ export async function createCashierUser() {
       email: 'pokladni@thaimassage.cz',
       password: 'pokladni123',
       options: {
-        emailRedirectTo: undefined,
         data: {
           full_name: 'Pokladní',
           role: 'cashier'
-        },
-        captchaToken: undefined
+        }
       }
     })
 
@@ -75,7 +71,27 @@ export async function createCashierUser() {
       return { success: false, error: error.message }
     }
 
+    console.log('Cashier user created:', data)
     return { success: true, data }
+  } catch (error) {
+    console.error('Error:', error)
+    return { success: false, error: 'Unexpected error' }
+  }
+}
+
+export async function checkUsersExist() {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('email, role, is_active')
+      .in('email', ['admin@thaimassage.cz', 'manager@thaimassage.cz', 'pokladni@thaimassage.cz'])
+    
+    if (error) {
+      console.error('Error checking users:', error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, users: data }
   } catch (error) {
     console.error('Error:', error)
     return { success: false, error: 'Unexpected error' }

@@ -2,14 +2,36 @@ import React, { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import toast from 'react-hot-toast'
 import { Scissors, UserPlus } from 'lucide-react'
-import { createTestUser, createManagerUser, createCashierUser } from '../lib/auth'
+import { createTestUser, createManagerUser, createCashierUser, checkUsersExist } from '../lib/auth'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [creatingUsers, setCreatingUsers] = useState(false)
+  const [checkingUsers, setCheckingUsers] = useState(false)
   const { signIn } = useAuth()
+
+  const handleCheckUsers = async () => {
+    setCheckingUsers(true)
+    try {
+      const result = await checkUsersExist()
+      if (result.success) {
+        if (result.users && result.users.length > 0) {
+          toast.success(`Nalezeno ${result.users.length} uživatelů v databázi`)
+          console.log('Existing users:', result.users)
+        } else {
+          toast.error('Žádní testovací uživatelé nebyli nalezeni. Vytvořte je nejprve.')
+        }
+      } else {
+        toast.error('Chyba při kontrole uživatelů: ' + result.error)
+      }
+    } catch (error) {
+      toast.error('Chyba při kontrole uživatelů')
+    } finally {
+      setCheckingUsers(false)
+    }
+  }
 
   const handleCreateTestUsers = async () => {
     setCreatingUsers(true)
@@ -19,9 +41,14 @@ export default function LoginPage() {
       const cashierResult = await createCashierUser()
 
       if (adminResult.success && managerResult.success && cashierResult.success) {
-        toast.success('Testovací uživatelé byli vytvořeni!')
+        toast.success('Testovací uživatelé byli vytvořeni! Zkontrolujte nastavení potvrzení emailu v Supabase.')
       } else {
-        toast.error('Někteří uživatelé již existují nebo došlo k chybě')
+        const errors = [
+          !adminResult.success && `Admin: ${adminResult.error}`,
+          !managerResult.success && `Manager: ${managerResult.error}`,
+          !cashierResult.success && `Cashier: ${cashierResult.error}`
+        ].filter(Boolean).join(', ')
+        toast.error('Chyba při vytváření: ' + errors)
       }
     } catch (error) {
       toast.error('Chyba při vytváření uživatelů')
@@ -29,6 +56,7 @@ export default function LoginPage() {
       setCreatingUsers(false)
     }
   }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -37,7 +65,11 @@ export default function LoginPage() {
       await signIn(email, password)
       toast.success('Úspěšně přihlášen!')
     } catch (error: any) {
-      toast.error(error.message || 'Chyba při přihlašování')
+      if (error.message?.includes('Invalid login credentials')) {
+        toast.error('Neplatné přihlašovací údaje. Zkontrolujte email a heslo, nebo zda jsou uživatelé potvrzeni.')
+      } else {
+        toast.error(error.message || 'Chyba při přihlašování')
+      }
     } finally {
       setLoading(false)
     }
@@ -96,6 +128,14 @@ export default function LoginPage() {
           <div className="mt-4">
             <button
               type="button"
+              onClick={handleCheckUsers}
+              disabled={checkingUsers}
+              className="group relative w-full flex justify-center py-2 px-4 border border-blue-300 text-sm font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed mb-2"
+            >
+              {checkingUsers ? 'Kontroluji...' : 'Zkontrolovat existující uživatele'}
+            </button>
+            <button
+              type="button"
               onClick={handleCreateTestUsers}
               disabled={creatingUsers}
               className="group relative w-full flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -105,7 +145,9 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <div className="mt-4 text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
+          <div className="mt-4 text-sm text-gray-600 bg-yellow-50 border border-yellow-200 p-3 rounded-md">
+            <p className="font-medium mb-2 text-yellow-800">⚠️ Důležité nastavení Supabase:</p>
+            <p className="text-yellow-700 mb-2">Pokud se nemůžete přihlásit, jděte do Supabase Dashboard → Authentication → Settings a vypněte "Confirm email"</p>
             <p className="font-medium mb-2">Testovací přihlašovací údaje:</p>
             <div className="space-y-1">
               <p><strong>Admin:</strong> admin@thaimassage.cz / admin123</p>
