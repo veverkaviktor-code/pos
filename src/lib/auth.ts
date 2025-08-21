@@ -7,10 +7,12 @@ export async function createTestUser() {
       email: 'admin@thaimassage.cz',
       password: 'admin123',
       options: {
+        emailRedirectTo: undefined,
         data: {
           full_name: 'Admin Uživatel',
           role: 'admin'
-        }
+        },
+        captchaToken: undefined
       }
     })
 
@@ -32,10 +34,12 @@ export async function createManagerUser() {
       email: 'manager@thaimassage.cz',
       password: 'manager123',
       options: {
+        emailRedirectTo: undefined,
         data: {
           full_name: 'Manažer Salonu',
           role: 'manager'
-        }
+        },
+        captchaToken: undefined
       }
     })
 
@@ -57,10 +61,12 @@ export async function createCashierUser() {
       email: 'pokladni@thaimassage.cz',
       password: 'pokladni123',
       options: {
+        emailRedirectTo: undefined,
         data: {
           full_name: 'Pokladní',
           role: 'cashier'
-        }
+        },
+        captchaToken: undefined
       }
     })
 
