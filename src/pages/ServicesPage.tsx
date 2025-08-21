@@ -29,8 +29,7 @@ export default function ServicesPage() {
         .from('services')
         .select(`
           *,
-          vat_rate:vat_rates(*),
-          inventory(*)
+          vat_rate:vat_rates(*)
         `)
         .order('name')
 
