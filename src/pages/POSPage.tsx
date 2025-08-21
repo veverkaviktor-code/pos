@@ -30,6 +30,7 @@ export default function POSPage() {
 
   const loadServices = async () => {
     try {
+      setServicesLoading(true)
       const { data, error } = await supabase
         .from('services')
         .select(`
@@ -39,11 +40,18 @@ export default function POSPage() {
         .eq('is_active', true)
         .order('name')
 
-      if (error) throw error
-      setServices(data || [])
+      if (error) {
+        console.error('Error loading services:', error)
+        toast.error('Chyba při načítání služeb: ' + error.message)
+        setServices([])
+      } else {
+        console.log('Loaded services:', data)
+        setServices(data || [])
+      }
     } catch (error) {
       console.error('Error loading services:', error)
       toast.error('Chyba při načítání služeb')
+      setServices([])
     } finally {
       setServicesLoading(false)
     }
@@ -56,10 +64,16 @@ export default function POSPage() {
         .select('*')
         .order('first_name')
 
-      if (error) throw error
-      setCustomers(data || [])
+      if (error) {
+        console.error('Error loading customers:', error)
+        setCustomers([])
+      } else {
+        console.log('Loaded customers:', data)
+        setCustomers(data || [])
+      }
     } catch (error) {
       console.error('Error loading customers:', error)
+      setCustomers([])
     }
   }
 
@@ -255,7 +269,8 @@ export default function POSPage() {
             <div className="p-6">
               {services.length === 0 ? (
                 <p className="text-gray-500 text-center py-8">
-                  Žádné aktivní služby nejsou k dispozici
+                  Žádné aktivní služby nejsou k dispozici.<br/>
+                  <span className="text-sm">Přidejte služby v sekci "Služby" nebo zkontrolujte databázové připojení.</span>
                 </p>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
