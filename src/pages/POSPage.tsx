@@ -21,43 +21,51 @@ export default function POSPage() {
   const [showCustomerModal, setShowCustomerModal] = useState(false);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        await Promise.all([
-          fetchServices(),
-          fetchCustomers(),
-          fetchVATRates()
-        ]);
-      } catch (error) {
-        console.error('Error loading POS data:', error);
-      }
-    };
-    
-    loadData();
+    // Load data with error handling to prevent infinite loading
+    fetchServices().catch(console.warn)
+    fetchCustomers().catch(console.warn)
+    fetchVATRates().catch(console.warn)
   }, []);
 
   const fetchServices = async () => {
     try {
       const { data, error } = await supabase
         .from('services')
-        .select(`
-          *,
-          vat_rate:vat_rates (
-            id,
-            name,
-            rate
-          )
-        `)
+        .select('*')
         .eq('is_active', true);
 
       if (error) {
-        console.error('Error fetching services:', error);
+        console.warn('Error fetching services:', error)
         setServices([]);
+        return
       } else {
-        setServices(data || []);
+        // Try to fetch VAT rates separately
+        const servicesWithVat = await Promise.all(
+          (data || []).map(async (service) => {
+            try {
+              const { data: vatData } = await supabase
+                .from('vat_rates')
+                .select('*')
+                .eq('id', service.vat_rate_id)
+                .single()
+              
+              return {
+                ...service,
+                vat_rate: vatData
+              }
+            } catch (vatError) {
+              console.warn('Error fetching VAT rate for service:', service.name, vatError)
+              return {
+                ...service,
+                vat_rate: { id: service.vat_rate_id, name: 'DPH 21%', rate: 21 }
+              }
+            }
+          })
+        )
+        setServices(servicesWithVat)
       }
     } catch (error) {
-      console.error('Error fetching services:', error);
+      console.warn('Error fetching services:', error)
       setServices([]);
     }
   };
@@ -70,13 +78,13 @@ export default function POSPage() {
         .order('first_name');
 
       if (error) {
-        console.error('Error fetching customers:', error);
+        console.warn('Error fetching customers:', error)
         setCustomers([]);
       } else {
         setCustomers(data || []);
       }
     } catch (error) {
-      console.error('Error fetching customers:', error);
+      console.warn('Error fetching customers:', error)
       setCustomers([]);
     }
   };
@@ -89,13 +97,13 @@ export default function POSPage() {
         .eq('is_active', true);
 
       if (error) {
-        console.error('Error fetching VAT rates:', error);
+        console.warn('Error fetching VAT rates:', error)
         setVATRates([]);
       } else {
         setVATRates(data || []);
       }
     } catch (error) {
-      console.error('Error fetching VAT rates:', error);
+      console.warn('Error fetching VAT rates:', error)
       setVATRates([]);
     }
   };

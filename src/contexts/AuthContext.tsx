@@ -47,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      setLoading(true)
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -55,8 +56,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Error fetching user profile:', error)
-        // If user doesn't exist in users table, create a basic user object
-        if (error.code === 'PGRST116') {
+        // If user doesn't exist in users table or there's an auth error, create a basic user object
+        if (error.code === 'PGRST116' || error.message?.includes('JWT') || error.message?.includes('auth')) {
+          // Try to get user info from Supabase auth
+          const { data: { user: authUser } } = await supabase.auth.getUser()
+          if (authUser) {
+            setUser({
+              id: authUser.id,
+              email: authUser.email || '',
+              full_name: authUser.user_metadata?.full_name || 'User',
+              role: authUser.user_metadata?.role || 'cashier',
+              is_active: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+          } else {
+            // Fallback user
+            setUser({
+              id: userId,
+              email: '',
+              full_name: 'User',
+              role: 'cashier',
+              is_active: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+          }
+        } else {
+          // For other errors, still create a basic user to prevent infinite loading
           setUser({
             id: userId,
             email: '',
@@ -72,6 +99,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       console.error('Error fetching user profile:', error)
+      // Always create a fallback user to prevent infinite loading
+      setUser({
+        id: userId,
+        email: '',
+        full_name: 'User',
+        role: 'cashier',
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
     } finally {
       setLoading(false)
     }
