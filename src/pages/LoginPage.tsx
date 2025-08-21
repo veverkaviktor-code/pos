@@ -65,8 +65,10 @@ export default function LoginPage() {
       await signIn(email, password)
       toast.success('Úspěšně přihlášen!')
     } catch (error: any) {
-      if (error.message?.includes('Invalid login credentials')) {
-        toast.error('Neplatné přihlašovací údaje. Zkontrolujte email a heslo, nebo zda jsou uživatelé potvrzeni.')
+      if (error.message?.includes('Invalid login credentials') || error.message?.includes('invalid_credentials')) {
+        toast.error('Neplatné přihlašovací údaje. Zkontrolujte nastavení "Confirm email" v Supabase Dashboard → Authentication → Settings a vypněte ho.', {
+          duration: 6000
+        })
       } else {
         toast.error(error.message || 'Chyba při přihlašování')
       }
@@ -147,7 +149,12 @@ export default function LoginPage() {
 
           <div className="mt-4 text-sm text-gray-600 bg-yellow-50 border border-yellow-200 p-3 rounded-md">
             <p className="font-medium mb-2 text-yellow-800">⚠️ Důležité nastavení Supabase:</p>
-            <p className="text-yellow-700 mb-2">Pokud se nemůžete přihlásit, jděte do Supabase Dashboard → Authentication → Settings a vypněte "Confirm email"</p>
+            <p className="text-yellow-700 mb-2">
+              <strong>Pokud dostáváte chybu "Invalid login credentials":</strong><br/>
+              1. Jděte do Supabase Dashboard → Authentication → Settings<br/>
+              2. Vypněte "Confirm email" (toggle na OFF)<br/>
+              3. Zkuste se přihlásit znovu
+            </p>
             <p className="font-medium mb-2">Testovací přihlašovací údaje:</p>
             <div className="space-y-1">
               <p><strong>Admin:</strong> admin@thaimassage.cz / admin123</p>
