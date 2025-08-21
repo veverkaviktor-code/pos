@@ -35,7 +35,8 @@ export default function POSPage() {
         .from('services')
         .select(`
           *,
-          vat_rate:vat_rates(*)
+          vat_rate:vat_rates(*),
+          inventory(*)
         `)
         .eq('is_active', true)
         .order('name')
@@ -78,9 +79,26 @@ export default function POSPage() {
   }
 
   const addToCart = (service: Service) => {
+    // Check stock availability for products
+    if (service.track_inventory) {
+      const inventory = service.inventory?.[0]
+      if (!inventory || inventory.available_stock <= 0) {
+        toast.error('Produkt není skladem')
+        return
+      }
+    }
+
     const existingItem = cart.find(item => item.service.id === service.id)
     
     if (existingItem) {
+      // Check stock limit when increasing quantity
+      if (service.track_inventory) {
+        const inventory = service.inventory?.[0]
+        if (inventory && existingItem.quantity >= inventory.available_stock) {
+          toast.error(`Maximální dostupné množství: ${inventory.available_stock} ks`)
+          return
+        }
+      }
       updateQuantity(service.id, existingItem.quantity + 1)
     } else {
       const vatRate = service.vat_rate?.rate || 0
@@ -103,6 +121,16 @@ export default function POSPage() {
     if (newQuantity <= 0) {
       removeFromCart(serviceId)
       return
+    }
+
+    // Check stock availability
+    const service = services.find(s => s.id === serviceId)
+    if (service?.track_inventory) {
+      const inventory = service.inventory?.[0]
+      if (inventory && newQuantity > inventory.available_stock) {
+        toast.error(`Maximální dostupné množství: ${inventory.available_stock} ks`)
+        return
+      }
     }
 
     setCart(cart.map(item => {
@@ -275,13 +303,44 @@ export default function POSPage() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {services.map((service) => (
+                    {(() => {
+                      const inventory = service.inventory?.[0]
+                      const isOutOfStock = service.track_inventory && inventory && inventory.available_stock <= 0
+                      const isLowStock = service.track_inventory && inventory && inventory.available_stock <= (service.min_stock || 0) && inventory.available_stock > 0
+                      
+                      return (
                     <div
                       key={service.id}
-                      className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 cursor-pointer transition-colors"
-                      onClick={() => addToCart(service)}
+                      className={`border rounded-lg p-4 transition-colors relative ${
+                        isOutOfStock 
+                          ? 'border-red-200 bg-red-50 cursor-not-allowed opacity-60' 
+                          : isLowStock
+                          ? 'border-orange-200 bg-orange-50 hover:border-orange-300 cursor-pointer'
+                          : 'border-gray-200 hover:border-primary-300 cursor-pointer'
+                      }`}
+                      onClick={() => !isOutOfStock && addToCart(service)}
                     >
+                      {isOutOfStock && (
+                        <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
+                          Vyprodáno
+                        </div>
+                      )}
+                      {isLowStock && (
+                        <div className="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded">
+                          Málo skladem
+                        </div>
+                      )}
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-gray-900">{service.name}</h4>
+                        <div>
+                          <h4 className="font-medium text-gray-900">{service.name}</h4>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-1 ${
+                            service.type === 'product' 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : 'bg-green-100 text-green-800'
+                          }`}>
+                            {service.type === 'product' ? 'Produkt' : 'Služba'}
+                          </span>
+                        </div>
                         <span className="text-lg font-bold text-primary-600">
                           {service.price.toFixed(0)} Kč
                         </span>
@@ -289,11 +348,20 @@ export default function POSPage() {
                       {service.description && (
                         <p className="text-sm text-gray-500 mb-2">{service.description}</p>
                       )}
-                      <div className="flex justify-between items-center text-sm text-gray-500">
-                        <span>{service.duration_minutes} min</span>
+                      <div className="flex justify-between items-center text-sm text-gray-500 flex-wrap gap-2">
+                        {service.type === 'service' && (
+                          <span>{service.duration_minutes} min</span>
+                        )}
+                        {service.track_inventory && inventory && (
+                          <span className={isLowStock ? 'text-orange-600 font-medium' : ''}>
+                            Sklad: {inventory.available_stock} ks
+                          </span>
+                        )}
                         <span>DPH {service.vat_rate?.rate || 0}%</span>
                       </div>
                     </div>
+                      )
+                    })()}
                   ))}
                 </div>
               )}

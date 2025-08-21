@@ -31,12 +31,40 @@ export interface Service {
   name: string
   description?: string
   price: number
+  purchase_price?: number
+  type: 'service' | 'product'
+  track_inventory: boolean
+  min_stock?: number
   duration_minutes: number
   vat_rate_id: string
   vat_rate?: VATRate
   is_active: boolean
   created_at: string
   updated_at: string
+  inventory?: Inventory
+}
+
+export interface Inventory {
+  id: string
+  service_id: string
+  current_stock: number
+  reserved_stock: number
+  available_stock: number
+  updated_at: string
+}
+
+export interface StockMovement {
+  id: string
+  service_id: string
+  service?: Service
+  type: 'in' | 'out' | 'adjustment' | 'sale' | 'return'
+  quantity: number
+  reference_type?: 'order' | 'adjustment' | 'purchase' | 'return'
+  reference_id?: string
+  notes?: string
+  user_id?: string
+  user?: User
+  created_at: string
 }
 
 export interface Order {
